@@ -77,23 +77,23 @@ resource webSite 'Microsoft.Web/sites@2020-12-01' = {
 }
 
 // Data resources
-//esource sqlserver 'Microsoft.Sql/servers@2021-02-01-preview' = {
-//  name: sqlserverName
-//  location: location
-//  properties: {
-//    administrators: {
-//      administratorType: 'ActiveDirectory'
-//      azureADOnlyAuthentication: true
-//      login: aadUsername
-//      principalType: 'User'
-//      sid: aadSid
-//      tenantId: tenant().tenantId
-//    }
-//    publicNetworkAccess: 'Enabled'
-//    version: '12.0'
-//  }
-//}
-/*
+resource sqlserver 'Microsoft.Sql/servers@2021-02-01-preview' = {
+  name: sqlserverName
+  location: location
+  properties: {
+    administrators: {
+      administratorType: 'ActiveDirectory'
+      azureADOnlyAuthentication: true
+      login: aadUsername
+      principalType: 'User'
+      sid: aadSid
+      tenantId: tenant().tenantId
+    }
+    publicNetworkAccess: 'Enabled'
+    version: '12.0'
+  }
+}
+
 resource sqlDatabase 'Microsoft.Sql/servers/databases@2020-08-01-preview' = {
   name: databaseName
   parent: sqlserver
@@ -117,7 +117,7 @@ resource sqlserverName_AllowAllWindowsAzureIps 'Microsoft.Sql/servers/firewallRu
     startIpAddress: '0.0.0.0'
   }
 }
-*/
+
 //networking resources
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2019-11-01' = {
   name: name
