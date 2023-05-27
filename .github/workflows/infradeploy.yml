@@ -1,42 +1,331 @@
-name: deploy-app-svc-networking-sample
+// Region for all resources
+param location string = resourceGroup().location
 
-on: [workflow_dispatch]
+param name string = 'appsvcnetworkingdemo'
 
-env: 
-    AZURE_RESOURCEGROUP_NAME: rg_eastus_85570_1_168519500987 # Be sure to use all lowercase values for the name. 
+@secure()
+param aadUsername string
+@secure()
+param aadSid string
 
-jobs:
-  deploy-infra:
-    runs-on: ubuntu-latest
-    steps:
-     - uses: actions/checkout@v2
-     - uses: azure/login@v1
-       name: Sign in to Azure
-       with:
-         creds: ${{ secrets.AZURE_CREDENTIALS }}    
-    #  - uses: Azure/cli@v1
-    #    name: Fetch AAD Info
-    #    id: fetchInfo
-    #    with:
-    #     inlineScript: |
-    #        aadSid=$(az ad user show --id ${{ secrets.AAD_USERNAME }} --query objectId -o tsv)
-    #        echo "::set-output name=aadSid::$aadSid"
-     - uses: azure/arm-deploy@v1
-       id: deploy
-       name: Deploy Bicep
-       with:
-         deploymentName: ${{ github.run_number }}
-         resourceGroupName: ${{ env.AZURE_RESOURCEGROUP_NAME }}
-         template: ./deploy/main.bicep
-         parameters: name=${{ env.AZURE_RESOURCEGROUP_NAME }} aadUsername=${{ secrets.AAD_USERNAME }} aadSid=${{ secrets.AAD_SID }} 
-    #  - name: Azure SQL Allow MI 
-    #    uses: Azure/sql-action@v1
-    #    with:
-    #      # Name of the Azure SQL Server name, like Fabrikam.database.windows.net.
-    #      server-name: ${{ steps.deploy.outputs.sqlServerFullyQualifiedDomainName }}
-    #      # The connection string, including authentication information, for the Azure SQL Server database.
-    #      connection-string: ${{ format('Server={0};Initial Catalog={1};User Id={2};Password={3};', steps.deploy.outputs.sqlServerFullyQualifiedDomainName, steps.deploy.outputs.databaseName, secrets.SQL_USERNAME, secrets.SQL_PASSWORD) }}
-    #      # Path to SQL script file to deploy
-    #      sql-file: ./deploy/mi.sql
-    #      # In case DACPAC option is selected, additional SqlPackage.exe arguments that will be applied. When SQL query option is selected, additional sqlcmd.exe arguments will be applied.
-    #      arguments: -v accountName=${{ steps.deploy.outputs.principalId }} # optional
+// Variables
+var hostingPlanName = '${name}${uniqueString(resourceGroup().id)}'
+var webSiteName = '${name}${uniqueString(resourceGroup().id)}'
+
+var sqlserverName = '${name}${uniqueString(resourceGroup().id)}'
+var databaseName = 'sampledb'
+
+var appGatewaySubnetName = 'AppGwSubnet'
+
+var frontDoorName = '${name}${uniqueString(resourceGroup().id)}'
+
+var frontEndEndpointName = frontDoorName
+var routingRuleName = 'routingRule'
+var origingGroupName = 'backendOrigingGroup'
+var origingName = 'appSvcNetDemo'
+
+// Web App resources
+resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
+  name: hostingPlanName
+  location: location
+  sku: {
+    name: 'S1'
+    capacity: 1
+  }
+  kind: 'linux'
+  properties: {
+    reserved: true
+  }
+}
+
+resource webSite 'Microsoft.Web/sites@2020-12-01' = {
+  name: webSiteName
+  location: location
+  tags: {
+    'hidden-related:${hostingPlan.id}': 'empty'
+    displayName: 'Website'
+  }
+  properties: {
+    serverFarmId: hostingPlan.id
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
+          value: 'false'
+        }
+        {
+          name: 'DefaultSqlConnectionSqlConnectionStringSuffix'
+          value: 'server=tcp:${sqlserver.properties.fullyQualifiedDomainName};database=${databaseName}'
+        }
+        {
+          name: 'DefaultSqlConnectionUseAzureManagedIdentity'
+          value: 'true'
+        }
+      ]
+      linuxFxVersion: 'DOCKER|jelledruyts/inspectorgadget'
+    }
+  }
+  identity: {
+    type: 'SystemAssigned'
+  }
+}
+
+// Data resources
+//esource sqlserver 'Microsoft.Sql/servers@2021-02-01-preview' = {
+//  name: sqlserverName
+//  location: location
+//  properties: {
+//    administrators: {
+//      administratorType: 'ActiveDirectory'
+//      azureADOnlyAuthentication: true
+//      login: aadUsername
+//      principalType: 'User'
+//      sid: aadSid
+//      tenantId: tenant().tenantId
+//    }
+//    publicNetworkAccess: 'Enabled'
+//    version: '12.0'
+//  }
+//}
+/*
+resource sqlDatabase 'Microsoft.Sql/servers/databases@2020-08-01-preview' = {
+  name: databaseName
+  parent: sqlserver
+  location: location
+  sku: {
+    name: 'Basic'
+  }
+  properties: {
+    collation: 'SQL_Latin1_General_CP1_CI_AS'
+    maxSizeBytes: 1073741824
+  }
+}
+
+//Allow all azure services: do NOT do this in production! This opens up your database to ALL azure customers azure services! 
+//In the demo walkthrough you will lock this down.
+resource sqlserverName_AllowAllWindowsAzureIps 'Microsoft.Sql/servers/firewallRules@2014-04-01' = {
+  name: 'AllowAllWindowsAzureIps'
+  parent: sqlserver
+  properties: {
+    endIpAddress: '0.0.0.0'
+    startIpAddress: '0.0.0.0'
+  }
+}
+*/
+//networking resources
+resource virtualNetwork 'Microsoft.Network/virtualNetworks@2019-11-01' = {
+  name: name
+  location: location
+  properties: {
+    addressSpace: {
+      addressPrefixes: [
+        '10.0.0.0/16'
+      ]
+    }
+    subnets: [
+      {
+        name: appGatewaySubnetName
+        properties: {
+          addressPrefix: '10.0.0.0/24'
+        }
+      }
+      {
+        name: 'IntegrationSubnet'
+        properties: {
+          addressPrefix: '10.0.1.0/24'
+        }
+      }
+      {
+        name: 'PLSubnet'
+        properties: {
+          addressPrefix: '10.0.2.0/24'
+        }
+      }
+    ]
+  }
+}
+
+resource publicIPAddress 'Microsoft.Network/publicIPAddresses@2019-11-01' = {
+  name: name
+  location: location
+  properties: {
+    publicIPAllocationMethod: 'Static'
+  }
+  sku: {
+    name: 'Standard'
+  }
+}
+
+resource applicationGateway 'Microsoft.Network/applicationGateways@2020-11-01' = {
+  name: name
+  location: location
+  properties: {
+    sku: {
+      name: 'Standard_v2'
+      tier: 'Standard_v2'
+      capacity: 1
+    }
+    gatewayIPConfigurations: [
+      {
+        name: 'appGwIpConfig'
+        properties: {
+          subnet: {
+            id: '${virtualNetwork.id}/subnets/${appGatewaySubnetName}'
+          }
+        }
+      }
+    ]
+    frontendIPConfigurations: [
+      {
+        name: 'appGwPublicFrontendIp'
+        properties: {
+          publicIPAddress: {
+            id: publicIPAddress.id
+          }
+        }
+      }
+    ]
+    frontendPorts: [
+      {
+        name: 'port_80'
+        properties: {
+          port: 80
+        }
+      }
+    ]
+    backendAddressPools: [
+      {
+        name: 'myBackendPool'
+        properties: {
+          backendAddresses: [
+            {
+              fqdn: webSite.properties.defaultHostName
+            }
+
+          ]
+        }
+      }
+    ]
+    backendHttpSettingsCollection: [
+      {
+        name: 'myHttpSettings'
+        properties: {
+          port: 80
+          protocol: 'Http'
+          cookieBasedAffinity: 'Disabled'
+          pickHostNameFromBackendAddress: false
+          hostName: webSite.properties.defaultHostName
+        }
+      }
+    ]
+    httpListeners: [
+      {
+        name: 'myListener'
+        properties: {
+          frontendIPConfiguration: {
+            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', name, 'appGwPublicFrontendIp')
+          }
+          frontendPort: {
+            id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', name, 'port_80')
+          }
+          protocol: 'Http'
+          sslCertificate: null
+        }
+      }
+    ]
+    requestRoutingRules: [
+      {
+        name: 'myRoutingRule'
+        properties: {
+          ruleType: 'Basic'
+          httpListener: {
+            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', name, 'myListener')
+          }
+          backendAddressPool: {
+            id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'myBackendPool')
+          }
+          backendHttpSettings: {
+            id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'myHTTPSettings')
+          }
+        }
+      }
+    ]
+  }
+}
+
+resource profile 'Microsoft.Cdn/profiles@2021-06-01' = {
+  name: frontDoorName
+  location: 'global'
+  sku: {
+    name: 'Premium_AzureFrontDoor'
+  }
+}
+
+resource endpoint 'Microsoft.Cdn/profiles/afdEndpoints@2021-06-01' = {
+  name: frontEndEndpointName
+  parent: profile
+  location: 'global'
+  properties: {
+    enabledState: 'Enabled'
+  }
+}
+
+resource originGroup 'Microsoft.Cdn/profiles/originGroups@2021-06-01' = {
+  name: origingGroupName
+  parent: profile
+  properties: {
+    loadBalancingSettings: {
+      sampleSize: 4
+      successfulSamplesRequired: 3
+    }
+    healthProbeSettings: {
+      probePath: '/'
+      probeRequestType: 'HEAD'
+      probeProtocol: 'Http'
+      probeIntervalInSeconds: 30
+    }
+  }
+}
+
+resource origin 'Microsoft.Cdn/profiles/originGroups/origins@2021-06-01' = {
+  name: origingName
+  parent: originGroup
+  properties: {
+    hostName: webSite.properties.defaultHostName
+    httpPort: 80
+    httpsPort: 443
+    originHostHeader: webSite.properties.defaultHostName
+    priority: 1
+    weight: 50
+  }
+}
+
+resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' = {
+  name: routingRuleName
+  parent: endpoint
+  dependsOn: [
+    origin // This explicit dependency is required to ensure that the origin group is not empty when the route is created.
+  ]
+  properties: {
+    originGroup: {
+      id: originGroup.id
+    }
+    supportedProtocols: [
+      'Http'
+      'Https'
+    ]
+    patternsToMatch: [
+      '/*'
+    ]
+    forwardingProtocol: 'MatchRequest'
+    linkToDefaultDomain: 'Enabled'
+    httpsRedirect: 'Enabled'
+  }
+}
+
+output principalId string = webSiteName
+output sqlserverName string = sqlserverName
+output databaseName string = databaseName
+output sqlServerFullyQualifiedDomainName string = sqlserver.properties.fullyQualifiedDomainName
+output webSiteHostName string = webSite.properties.defaultHostName
+output frontDoorEndpointHostName string = endpoint.properties.hostName
