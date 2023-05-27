@@ -27,12 +27,6 @@ var origingName = 'appSvcNetDemo'
 // Web App resources
 resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
   name: hostingPlanName
- Check failure on line 29 in .github/workflows/infradeploy.yml
-
-GitHub Actions
-/ .github/workflows/infradeploy.yml
-Invalid workflow file
-You have an error in your yaml syntax on line 29
   location: location
   sku: {
     name: 'S1'
