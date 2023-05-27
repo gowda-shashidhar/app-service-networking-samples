@@ -1,7 +1,7 @@
 // Region for all resources
 param location string = resourceGroup().location
 
-param name string = 'appsvcnetworkingdemo'
+param name string = 'rg_eastus_85570_1_168519500987'
 
 @secure()
 param aadUsername string
