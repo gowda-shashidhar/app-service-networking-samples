@@ -112,7 +112,7 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2020-11-01' =
         properties: {
           backendAddresses: [
             {
-              fqdn: webSite.properties.defaultHostName
+              
             }
 
           ]
@@ -127,7 +127,7 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2020-11-01' =
           protocol: 'Http'
           cookieBasedAffinity: 'Disabled'
           pickHostNameFromBackendAddress: false
-          hostName: webSite.properties.defaultHostName
+          hostName: azurewebapptest12.azurewebsites.net
         }
       }
     ]
@@ -204,10 +204,10 @@ resource origin 'Microsoft.Cdn/profiles/originGroups/origins@2021-06-01' = {
   name: origingName
   parent: originGroup
   properties: {
-    hostName: webSite.properties.defaultHostName
+    hostName: azurewebapptest12.azurewebsites.net
     httpPort: 80
     httpsPort: 443
-    originHostHeader: webSite.properties.defaultHostName
+    originHostHeader: azurewebapptest12.azurewebsites.net
     priority: 1
     weight: 50
   }
