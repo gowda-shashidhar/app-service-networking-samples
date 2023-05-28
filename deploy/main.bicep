@@ -29,7 +29,7 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
   name: hostingPlanName
   location: location
   sku: {
-    name: 'F1'
+    name: 'BASIC'
     capacity: 1
   }
   kind: 'linux'
@@ -70,47 +70,6 @@ resource webSite 'Microsoft.Web/sites@2020-12-01' = {
   }
 }
 
-// Data resources
-resource sqlserver 'Microsoft.Sql/servers@2021-02-01-preview' = {
-  name: sqlserverName
-  location: location
-  properties: {
-    administrators: {
-      administratorType: 'ActiveDirectory'
-      azureADOnlyAuthentication: true
-      login: aadUsername
-      principalType: 'User'
-      sid: aadSid
-      tenantId: tenant().tenantId
-    }
-    publicNetworkAccess: 'Enabled'
-    version: '12.0'
-  }
-}
-
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2020-08-01-preview' = {
-  name: databaseName
-  parent: sqlserver
-  location: location
-  sku: {
-    name: 'Basic'
-  }
-  properties: {
-    collation: 'SQL_Latin1_General_CP1_CI_AS'
-    maxSizeBytes: 104857600
-  }
-}
-
-//Allow all azure services: do NOT do this in production! This opens up your database to ALL azure customers azure services! 
-//In the demo walkthrough you will lock this down.
-resource sqlserverName_AllowAllWindowsAzureIps 'Microsoft.Sql/servers/firewallRules@2014-04-01' = {
-  name: 'AllowAllWindowsAzureIps'
-  parent: sqlserver
-  properties: {
-    endIpAddress: '0.0.0.0'
-    startIpAddress: '0.0.0.0'
-  }
-}
 
 //networking resources
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2019-11-01' = {
@@ -324,8 +283,8 @@ resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' = {
 }
 
 output principalId string = webSiteName
-output sqlserverName string = sqlserverName
-output databaseName string = databaseName
-output sqlServerFullyQualifiedDomainName string = sqlserver.properties.fullyQualifiedDomainName
+#output sqlserverName string = sqlserverName
+#output databaseName string = databaseName
+#output sqlServerFullyQualifiedDomainName string = sqlserver.properties.fullyQualifiedDomainName
 output webSiteHostName string = webSite.properties.defaultHostName
 output frontDoorEndpointHostName string = endpoint.properties.hostName
