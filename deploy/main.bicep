@@ -204,7 +204,6 @@ resource origin 'Microsoft.Cdn/profiles/originGroups/origins@2021-06-01' = {
   name: origingName
   parent: originGroup
   properties: {
-    hostName: azurewebapp-dkbshhbzgre3f3dd.z01.azurefd.net
     httpPort: 80
     httpsPort: 443
     priority: 1
@@ -239,5 +238,4 @@ resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' = {
 //output sqlserverName string = sqlserverName
 //output databaseName string = databaseName
 //output sqlServerFullyQualifiedDomainName string = sqlserver.properties.fullyQualifiedDomainName
-output webSiteHostName string = azurewebapp-dkbshhbzgre3f3dd.z01.azurefd.net
 output frontDoorEndpointHostName string = endpoint.properties.hostName
