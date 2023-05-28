@@ -283,8 +283,8 @@ resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' = {
 }
 
 output principalId string = webSiteName
-#output sqlserverName string = sqlserverName
-#output databaseName string = databaseName
-#output sqlServerFullyQualifiedDomainName string = sqlserver.properties.fullyQualifiedDomainName
+//output sqlserverName string = sqlserverName
+//output databaseName string = databaseName
+//output sqlServerFullyQualifiedDomainName string = sqlserver.properties.fullyQualifiedDomainName
 output webSiteHostName string = webSite.properties.defaultHostName
 output frontDoorEndpointHostName string = endpoint.properties.hostName
