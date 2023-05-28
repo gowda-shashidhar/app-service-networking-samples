@@ -1,4 +1,4 @@
-// Region for all resources
+// Region for all resource
 param location string = resourceGroup().location
 
 param name string = 'rg_eastus_85570_1_168525133780'
