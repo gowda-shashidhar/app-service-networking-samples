@@ -127,7 +127,6 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2020-11-01' =
           protocol: 'Http'
           cookieBasedAffinity: 'Disabled'
           pickHostNameFromBackendAddress: false
-          hostName: azurewebapptest12.azurewebsites.net
         }
       }
     ]
