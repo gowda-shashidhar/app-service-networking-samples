@@ -53,14 +53,14 @@ resource webSite 'Microsoft.Web/sites@2020-12-01' = {
           name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
           value: 'false'
         }
-        {
-          name: 'DefaultSqlConnectionSqlConnectionStringSuffix'
-          value: 'server=tcp:${sqlserver.properties.fullyQualifiedDomainName};database=${databaseName}'
-        }
-        {
-          name: 'DefaultSqlConnectionUseAzureManagedIdentity'
-          value: 'true'
-        }
+        //{
+         // name: 'DefaultSqlConnectionSqlConnectionStringSuffix'
+        //  value: 'server=tcp:${sqlserver.properties.fullyQualifiedDomainName};database=${databaseName}'
+        //}
+        //{
+        //  name: 'DefaultSqlConnectionUseAzureManagedIdentity'
+         // value: 'true'
+        //}
       ]
       linuxFxVersion: 'DOCKER|jelledruyts/inspectorgadget'
     }
