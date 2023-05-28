@@ -24,52 +24,6 @@ var routingRuleName = 'routingRule'
 var origingGroupName = 'backendOrigingGroup'
 var origingName = 'appSvcNetDemo'
 
-// Web App resources
-resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
-  name: hostingPlanName
-  location: location
-  sku: {
-    name: 'P1v2'
-    capacity: 1
-  }
-  kind: 'linux'
-  properties: {
-    reserved: false
-  }
-}
-
-resource webSite 'Microsoft.Web/sites@2020-12-01' = {
-  name: webSiteName
-  location: location
-  tags: {
-    'hidden-related:${hostingPlan.id}': 'empty'
-    displayName: 'Website'
-  }
-  properties: {
-    serverFarmId: hostingPlan.id
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
-          value: 'false'
-        }
-        //{
-         // name: 'DefaultSqlConnectionSqlConnectionStringSuffix'
-        //  value: 'server=tcp:${sqlserver.properties.fullyQualifiedDomainName};database=${databaseName}'
-        //}
-        //{
-        //  name: 'DefaultSqlConnectionUseAzureManagedIdentity'
-         // value: 'true'
-        //}
-      ]
-      linuxFxVersion: 'DOCKER|jelledruyts/inspectorgadget'
-    }
-  }
-  identity: {
-    type: 'SystemAssigned'
-  }
-}
-
 
 //networking resources
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2019-11-01' = {
@@ -282,7 +236,7 @@ resource route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' = {
   }
 }
 
-output principalId string = webSiteName
+//output principalId string = webSiteName
 //output sqlserverName string = sqlserverName
 //output databaseName string = databaseName
 //output sqlServerFullyQualifiedDomainName string = sqlserver.properties.fullyQualifiedDomainName
