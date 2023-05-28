@@ -29,7 +29,7 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
   name: hostingPlanName
   location: location
   sku: {
-    name: 'Basic'
+    name: 'Free'
     capacity: 1
   }
   kind: 'linux'
