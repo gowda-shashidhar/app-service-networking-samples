@@ -31,7 +31,7 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
     name: 'Free'
     capacity: 1
   }
-  kind: 'linux'
+  kind: 'app,linux'
   properties: {
     reserved: true
   }
