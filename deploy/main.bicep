@@ -31,7 +31,7 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2020-12-01' = {
   sku: {
    name: 'B1'
    capacity: 1
-   tier: 'Shared'
+   tier: 'Basic'
   }
   kind: 'linux'
   properties: {
